@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1a2f24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>空气射箭</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --moss: #1a2f24;
+      --deep: #0e1a14;
+      --foam: #e8f0df;
+      --muted: #8fa892;
+      --accent: #6fbf73;
+      --leather: #c45c26;
+      --gold: #e0c078;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: "Noto Sans SC", "Syne", sans-serif;
+      color: var(--foam);
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -5%, rgba(126, 184, 212, 0.22), transparent 55%),
+        radial-gradient(ellipse 70% 45% at 90% 100%, rgba(196, 92, 38, 0.18), transparent 50%),
+        linear-gradient(165deg, #243d32 0%, var(--moss) 42%, var(--deep) 100%);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: calc(10px + var(--safe-t)) 14px calc(12px + var(--safe-b));
+      user-select: none;
+    }
+
+    .top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .brand {
+      font-family: "Syne", "Noto Sans SC", sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.3rem, 5vw, 1.7rem);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      animation: brandIn 0.7s ease-out both;
+    }
+    .brand span {
+      display: block;
+      font-size: 0.66rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+    .badges { display: flex; flex-direction: column; gap: 6px; }
+    .badge {
+      font-size: 0.66rem;
+      padding: 6px 10px;
+      border: 1px solid rgba(143, 168, 146, 0.35);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(14, 26, 20, 0.5);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .badge.active {
+      color: var(--gold);
+      border-color: rgba(224, 192, 120, 0.55);
+      background: rgba(196, 92, 38, 0.2);
+    }
+
+    .range-tabs {
+      display: flex;
+      gap: 6px;
+      margin: 8px 0 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .range-tabs::-webkit-scrollbar { display: none; }
+    .range-tab {
+      flex: 0 0 auto;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .range-tab.active {
+      color: var(--deep);
+      background: var(--accent);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .hud-item {
+      background: rgba(14, 26, 20, 0.45);
+      border: 1px solid rgba(143, 168, 146, 0.2);
+      border-radius: 12px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+    .hud-item .h {
+      font-size: 0.62rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+    .hud-item .v {
+      font-family: "Syne", sans-serif;
+      font-weight: 800;
+      font-size: 1.05rem;
+      margin-top: 2px;
+    }
+    #status[data-state="draw"] { color: var(--gold); }
+    #status[data-state="fly"] { color: #7eb8d4; }
+    #status[data-state="over"] { color: var(--leather); }
+
+    .range-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .range-meta strong {
+      font-family: "Syne", sans-serif;
+      font-size: 1rem;
+      color: var(--foam);
+      font-weight: 800;
+    }
+
+    #stage {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(143, 168, 146, 0.25);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+      animation: rise 0.55s ease-out both;
+    }
+    #field {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+      background: #4a7a45;
+    }
+
+    .power {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(14, 26, 20, 0.55);
+      overflow: hidden;
+      pointer-events: none;
+    }
+    #power-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6fbf73, #e0c078, #c45c26);
+      transition: width 0.05s linear;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr 0.85fr;
+      gap: 8px;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 520px;
+      align-self: center;
+    }
+    .controls button {
+      border: none;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 14px 8px;
+      border-radius: 14px;
+      cursor: pointer;
+      color: var(--foam);
+      background: rgba(14, 26, 20, 0.55);
+      border: 1px solid rgba(143, 168, 146, 0.28);
+    }
+    .controls button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    #release-btn {
+      background: linear-gradient(160deg, #e0c078, #c45c26);
+      color: #2a1608;
+      border: none;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+    }
+    #mute-btn.on {
+      color: #ffb4a8;
+      border-color: rgba(255, 180, 168, 0.45);
+    }
+
+    .help {
+      text-align: center;
+      font-size: 0.66rem;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(24px + var(--safe-b));
+      transform: translateX(-50%) translateY(12px);
+      background: rgba(14, 26, 20, 0.92);
+      border: 1px solid rgba(224, 192, 120, 0.35);
+      color: var(--gold);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 40;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #result {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(14, 26, 20, 0.92);
+      z-index: 20;
+      text-align: center;
+      padding: 20px;
+    }
+    #result.show { display: flex; }
+    #result h2 {
+      font-family: "Syne", sans-serif;
+      font-weight: 800;
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+    }
+    #result .big {
+      font-family: "Syne", sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+    }
+    #result .sub { color: var(--muted); margin: 10px 0 6px; font-size: 0.85rem; }
+    #result .detail { color: var(--foam); font-size: 0.9rem; margin-bottom: 16px; letter-spacing: 0.04em; }
+    #again-btn {
+      border: none;
+      background: linear-gradient(160deg, #e0c078, #c45c26);
+      color: #2a1608;
+      font: inherit;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 12px 28px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    @keyframes brandIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Watch / tiny screens */
+    @media (max-width: 280px), (max-height: 300px) {
+      body { padding: 4px; }
+      .brand { font-size: 0.9rem; }
+      .brand span, .help, .badges, #cancel-btn, #mute-btn, .range-meta { display: none; }
+      .range-tabs { margin: 2px 0 4px; }
+      .range-tab { font-size: 0.62rem; padding: 4px 8px; }
+      .hud { gap: 3px; margin-bottom: 4px; }
+      .hud-item { padding: 4px 2px; border-radius: 8px; }
+      .hud-item .h { font-size: 0.5rem; }
+      .hud-item .v { font-size: 0.75rem; }
+      #stage { border-radius: 10px; }
+      .controls { grid-template-columns: 1fr 1fr; margin-top: 6px; gap: 4px; }
+      .controls button { padding: 8px 4px; font-size: 0.72rem; border-radius: 8px; }
+      #result h2 { font-size: 1.1rem; }
+      #result .big { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1 class="brand">空气射箭<span>Air Archery</span></h1>
+    <div class="badges">
+      <div class="badge" id="ring-badge">戒指 · 点击启用</div>
+      <div class="badge" id="cane-badge">手杖 · 点击启用</div>
+    </div>
+  </header>
+
+  <div class="range-tabs" id="range-tabs" aria-label="靶距"></div>
+
+  <div class="range-meta">
+    <div><strong id="range-name">近靶</strong> · <span id="range-hint">稳、少风</span></div>
+    <div>最佳 <span id="best-score">0</span></div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-item"><div class="h">得分</div><div class="v" id="score">0</div></div>
+    <div class="hud-item"><div class="h">余箭</div><div class="v" id="arrows-left">6</div></div>
+    <div class="hud-item"><div class="h">拉力</div><div class="v" id="draw-val">0%</div></div>
+    <div class="hud-item"><div class="h">状态</div><div class="v" id="status" data-state="idle">待命</div></div>
+  </div>
+
+  <main id="stage">
+    <canvas id="field" aria-label="靶场"></canvas>
+    <div class="power" aria-hidden="true"><div id="power-fill"></div></div>
+    <div id="result">
+      <h2>本轮结束</h2>
+      <div class="big" id="result-score">0</div>
+      <div class="sub">最佳 <span id="result-best">0</span></div>
+      <div class="detail" id="result-detail"></div>
+      <button type="button" id="again-btn">再来一轮</button>
+    </div>
+  </main>
+
+  <div class="controls">
+    <button type="button" id="draw-btn">拉弓</button>
+    <button type="button" id="release-btn">放箭</button>
+    <button type="button" id="cancel-btn">取消</button>
+    <button type="button" id="mute-btn">静音</button>
+  </div>
+  <p class="help">戒指倾角瞄准 · 甩动取消 · 手杖挥动拉弓 · 敲击放箭<br>也可拖动画布瞄准；按住空格拉弓，松开放箭 · 风 <span id="wind-val">→ 0.00</span></p>
+
+  <div id="toast" role="status"></div>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

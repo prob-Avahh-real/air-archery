@@ -1,0 +1,41 @@
+{
+  "name": "air-archery",
+  "version": "1.0.0",
+  "description": "空气射箭手势与靶场协议",
+  "gestures": {
+    "ring": {
+      "aim": {
+        "action": "aim",
+        "mode": "absolute",
+        "beta_range_deg": [-45, 45],
+        "gamma_range_deg": [-45, 45],
+        "throttle_frames": 2
+      },
+      "shake": { "action": "cancel_draw", "threshold_deg": 20, "throttle_frames": 8 }
+    },
+    "cane": {
+      "swing": { "action": "draw", "threshold": 3, "throttle_frames": 6 },
+      "tap": { "action": "release", "accel_spike": 8, "throttle_frames": 6 }
+    }
+  },
+  "ranges": [
+    { "id": "near", "label": "近靶", "distance": 1.0, "wind": 0, "drop": 0.08 },
+    { "id": "mid", "label": "中靶", "distance": 1.55, "wind": 0.12, "drop": 0.16 },
+    { "id": "far", "label": "远靶", "distance": 2.2, "wind": 0.22, "drop": 0.28 }
+  ],
+  "scoring": {
+    "rings": [
+      { "radius": 0.08, "points": 10, "label": "红心" },
+      { "radius": 0.18, "points": 8, "label": "内环" },
+      { "radius": 0.32, "points": 5, "label": "中环" },
+      { "radius": 0.48, "points": 2, "label": "外环" }
+    ],
+    "miss": 0
+  },
+  "round": {
+    "arrows": 6,
+    "max_draw": 1,
+    "draw_rate": 0.85,
+    "min_release_power": 0.18
+  }
+}
